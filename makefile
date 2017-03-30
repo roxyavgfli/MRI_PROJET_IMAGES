@@ -1,3 +1,2 @@
-
-all:
-	cc rdjpeg.c read_image.c -o read_image
+all: proc.h
+	cc rdjpeg.c read_image.c proc.c -o read_image
