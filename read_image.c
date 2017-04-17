@@ -36,42 +36,71 @@ void histo (float* hist, CIMAGE cim, int taille){
   }
 }
 
+void histo_clust(float* hist, char* filename, int taille){
+
+  int val, i;
+  //Initialisation de des valeur de l'histogramme a 0
+  for (i = 0; i<taille; i++){
+    hist[i] = 0;
+  }
+
+  FILE * file = fopen(filename, "r");
+  fscanf(file ,"%d", &val);
+  while( !feof (file)){
+    hist[val]++;
+  }
+  fclose(file);
+}
+
+
 int main(int argc, char *argv[])
 {
   if(argc != 3){
-    printf("Veuillez utilisez le programme de cette manière :\n ./read_image <option> <url>\noption : \n-i pour indexer\n-r pour la recherche\n");
+    printf("Veuillez utilisez le programme de cette manière :\n ./read_image <option> <url>\noption : \n-i pour indexer\n-r pour la recherche\n -ic pour l'Indexation des cluster\n -rc pour la rechecher via cluster\n");
     exit(1);
   }
 
-  if(strcmp(argv[1], "-i") != 0 && strcmp(argv[1], "-r") != 0 ){
-    printf("option : \n-i pour indexer\n-r pour la recherche\n");
+  if(strcmp(argv[1], "-i") != 0 && strcmp(argv[1], "-r") != 0 && strcmp(argv[1], "-rc") != 0 && strcmp(argv[1], "-ic") != 0){
+    printf("option : \n-i pour indexer\n-r pour la recherche\n -ic pour l'Indexation des cluster\n -rc pour la rechecher via cluster\n");
     exit(1);
-  }
-
-  int i,j,n,nx,ny,nb;
-  CIMAGE cim;
-  int taille = REDBIN * BLUEBIN * GREENBIN;
-  float hist[taille];
-
-  /*------------------------------------------------*/
-  /* lecture d'une image requête                    */
-  /*------------------------------------------------*/
-  read_cimage(argv[2],&cim);
-
-  //traitement de l'histogram
-  histo(hist, cim, taille);
+  }  
   
   if(strcmp(argv[1], "-i") == 0){
     printf("Indexation\n");
-    //FILE * result = fopen("result.bin", "a");
-    //fwrite(hist, sizeof(float), taille, result);
-    //fclose(result);
+    
+    /*------------------------------------------------*/
+    /* lecture d'une image requête                    */
+    /*------------------------------------------------*/
+    CIMAGE cim;
+    read_cimage(argv[2],&cim);
+
+    //traitement de l'histogram
+    int taille = REDBIN * BLUEBIN * GREENBIN;
+    float hist[taille];
+    histo(hist, cim, taille);
+
+    FILE * result = fopen("result.bin", "a");
+    fwrite(hist, sizeof(float), taille, result);
+    fclose(result);
+
   } else if (strcmp(argv[1], "-r") == 0){
     printf("Comparaison\n");
+
+    int i,j,n;
     float distance = 0;
+
+    /*------------------------------------------------*/
+    /* lecture d'une image requête                    */
+    /*------------------------------------------------*/
+    CIMAGE cim;
+    read_cimage(argv[2],&cim);
+
+    //traitement de l'histogram
+    int taille = REDBIN * BLUEBIN * GREENBIN;
+    float hist[taille];
+    histo(hist, cim, taille);
     
     // initialisation du tableau de Key avec les urls
-    int n;
     char ** tab_urls = readList("urls.txt" , &n);
     KEY tab_key[n];
     for (i = 0; i<n; i++){
@@ -85,7 +114,6 @@ int main(int argc, char *argv[])
     for(i = 0; i<n; i++){
       //Récupération de histogramme dans le ficier result.bin
       fread(hist_to_compare, sizeof(float), taille, hist_file);
-
       //calcul de la distance
       for(j = 0; j<taille; j++){
         distance = distance + abso(hist[j] * hist[j] - hist_to_compare[j] * hist_to_compare[j]); // distance euclidienne au carré
@@ -100,6 +128,26 @@ int main(int argc, char *argv[])
       printf("<IMG SRC=\"%s\"'>\n",tab_urls[tab_key[i].k]);
     }
     fclose(hist_file); // On oublie pas de fermer ce qu'on a ouvert
+  } else if (strcmp(argv[1], "-rc") == 0){
+    printf("recherche par cluster\n");
+
+    int taille = 256;
+
+    float histo[taille];
+    histo_clust(histo, argv[2], taille);
+
+  } else if (strcmp(argv[1], "-ic") == 0){
+    printf("Indexation par cluster\n");
+
+    int taille = 256;
+    //création de l'histogramme du cluster
+    float hist[taille];
+    histo_clust(hist, argv[2], taille);
+
+    //Ecriture du fichier.
+    FILE * result = fopen("result_clust.bin", "a");
+    fwrite(hist, sizeof(float), taille, result);
+    fclose(result);
   }
   exit(0);
 }
