@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <dirent.h>
 
 #include "rdjpeg.h"
 #include "proc.h"
@@ -45,8 +46,8 @@ void histo_clust(float* hist, char* filename, int taille){
   }
 
   FILE * file = fopen(filename, "r");
-  fscanf(file ,"%d", &val);
   while( !feof (file)){
+    fscanf(file ,"%d", &val);
     hist[val]++;
   }
   fclose(file);
@@ -129,24 +130,36 @@ int main(int argc, char *argv[])
     }
     fclose(hist_file); // On oublie pas de fermer ce qu'on a ouvert
   } else if (strcmp(argv[1], "-rc") == 0){
+    
     printf("recherche par cluster\n");
-
+    
+    //traitement de l'histogram
     int taille = 256;
+    float hist_sift[taille];
+    histo_clust(hist_sift, argv[2], taille);
+
+    FILE * result = fopen("result_clust.bin", "a");
+    fwrite(hist_sift, sizeof(int), taille, result);
+    fclose(result);
+
+    /*int taille = 256;
 
     float histo[taille];
     histo_clust(histo, argv[2], taille);
+    */
 
   } else if (strcmp(argv[1], "-ic") == 0){
     printf("Indexation par cluster\n");
-
+    
     int taille = 256;
+    
     //création de l'histogramme du cluster
-    float hist[taille];
-    histo_clust(hist, argv[2], taille);
+    float hist_clust[taille];
+    histo_clust(hist_clust, argv[2], taille);
 
     //Ecriture du fichier.
     FILE * result = fopen("result_clust.bin", "a");
-    fwrite(hist, sizeof(float), taille, result);
+    fwrite(hist_clust, sizeof(float), taille, result);
     fclose(result);
   }
   exit(0);
