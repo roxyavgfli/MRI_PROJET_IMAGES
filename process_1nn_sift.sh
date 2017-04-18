@@ -1,6 +1,6 @@
 #!/bin/sh
 
-for f in /media/lucas/DATA/MRI_RESSOURCE/sift/*.sift
+for f in ./sift/*.sift
 do
   echo "Traitrement de $f"
   sed -n '4,$p' $f | tr -d ";" | sed 's/<CIRCLE [1-9].*> //' > ./trav.sift
